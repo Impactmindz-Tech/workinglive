@@ -24,6 +24,14 @@ const Room = () => {
   const params = useParams();
   const navigate = useNavigate();
 
+  const [logMessages, setLogMessages] = useState([]);
+
+  const addLogMessage = (message) => {
+    setLogMessages((prevMessages) => [...prevMessages, message]);
+  };
+  
+
+
   // const configuration = {
   //   iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
   // };
@@ -32,9 +40,9 @@ const Room = () => {
     iceServers: [
       { urls: "stun:stun.l.google.com:19302" }, // Free STUN server
       {
-        urls: "relay1.expressturn.com:3478", // Replace with your TURN server URL
-        username: "efFB27U3UQZAO4UJTS",         // TURN server username
-        credential: "ZFL8IlpiPjMDT4uT",       // TURN server password
+        urls: "turn:relay1.expressturn.com:3478", // TURN server URL with "turn:" prefix
+        username: "efFB27U3UQZAO4UJTS", // TURN server username
+        credential: "ZFL8IlpiPjMDT4uT", // TURN server password
       },
     ],
   };
@@ -58,7 +66,7 @@ const Room = () => {
   useEffect(() => {
     // Check connection status and handle errors
     const handleConnectionError = (error) => {
-      console.error("Socket connection error:", error);
+      addLogMessage(`Socket connection error: ${error.message}`);
       setErrorMessage("Socket connection error. Please try again.");
     };
 
@@ -182,11 +190,12 @@ const Room = () => {
       .getTracks()
       .forEach((track) => peerConnection.addTrack(track, localStream));
 
-    peerConnection.onicecandidate = (event) => {
-      if (event.candidate) {
-        socket.emit("ice-candidate", event.candidate, roomId, viewerId);
-      }
-    };
+      peerConnection.onicecandidate = (event) => {
+        if (event.candidate) {
+          addLogMessage(`New ICE Candidate: ${event.candidate.candidate}`);
+          socket.emit("ice-candidate", event.candidate, roomId, viewerId);
+        }
+      };
 
     peerConnection
       .createOffer()
@@ -205,7 +214,15 @@ const Room = () => {
 
     peerConnection.onicecandidate = (event) => {
       if (event.candidate) {
-        socket.emit("ice-candidate", event.candidate, roomId, broadcasterId);
+        console.log("New ICE Candidate: ", event.candidate.candidate);
+        socket.emit("ice-candidate", event.candidate, roomId, viewerId);
+      }
+    };
+
+    peerConnection.oniceconnectionstatechange = () => {
+      addLogMessage(`ICE Connection State: ${peerConnection.iceConnectionState}`);
+      if (peerConnection.iceConnectionState === "failed") {
+        addLogMessage("ICE connection failed. Retrying...");
       }
     };
 
@@ -322,8 +339,17 @@ const Room = () => {
   }, [messages]);
 
   return (
+    
     <div className="relative z-[1] before:block before:absolute before:-inset-0 before:bg-black/10 before:z-[-1] overflow-hidden">
       <div className="flex flex-col items-center space-y-4 absolute top-[20px] sm:top-[10px] left-auto right-[20px] sm:right-[10px]">
+        <div id="log-messages" className="log-messages">
+          {logMessages.map((msg, index) => (
+            <div key={index} className="text-red-500">
+              {msg}
+            </div>
+          ))}
+        </div>
+
         {isBroadcaster && (
           <button
             className="bg-[#2d2d2d] text-white font-semibold py-2 px-4 shadow-l rounded-full sm:text-xs sm:py-[8px]"
