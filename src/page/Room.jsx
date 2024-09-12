@@ -214,17 +214,20 @@ const Room = () => {
 
     peerConnection.onicecandidate = (event) => {
       if (event.candidate) {
-        console.log("New ICE Candidate: ", event.candidate.candidate);
+        addLogMessage(`ICE Candidate gathered: ${event.candidate.candidate}`);
         socket.emit("ice-candidate", event.candidate, roomId, viewerId);
+      } else {
+        addLogMessage("All ICE candidates have been gathered");
       }
     };
-
+    
     peerConnection.oniceconnectionstatechange = () => {
-      addLogMessage(`ICE Connection State: ${peerConnection.iceConnectionState}`);
-      if (peerConnection.iceConnectionState === "failed") {
-        addLogMessage("ICE connection failed. Retrying...");
+      addLogMessage(`ICE Connection State changed to: ${peerConnection.iceConnectionState}`);
+      if (peerConnection.iceConnectionState === "disconnected") {
+        addLogMessage("ICE connection state disconnected. The peer connection is lost.");
       }
     };
+    
 
     peerConnection.ontrack = (event) => {
       const remoteVideo = document.createElement("video");
