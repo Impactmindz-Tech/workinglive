@@ -24,9 +24,21 @@ const Room = () => {
   const params = useParams();
   const navigate = useNavigate();
 
+  // const configuration = {
+  //   iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
+  // };
+
   const configuration = {
-    iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
+    iceServers: [
+      { urls: "stun:stun.l.google.com:19302" }, // Free STUN server
+      {
+        urls: "relay1.expressturn.com:3478", // Replace with your TURN server URL
+        username: "efFB27U3UQZAO4UJTS",         // TURN server username
+        credential: "ZFL8IlpiPjMDT4uT",       // TURN server password
+      },
+    ],
   };
+  
 
   useEffect(() => {
     // Fetch the available media devices
